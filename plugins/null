@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# A converter that does nothing.
+
+
+function plugin_convert() {
+    CONVERTED_FILE=$1
+}
+

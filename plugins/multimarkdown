@@ -1,0 +1,63 @@
+#!/bin/bash
+
+
+function split(){
+    local s=$1
+    local on=$2
+    local IFS="$on"
+    read -a RESULT <<< "$s"; }
+
+function split_categories() {
+    local categories=$1
+    split "$categories" ","
+    for value in "${RESULT[@]}"
+    do
+        value=$(trim "$value")
+        CONVERTED_CATEGORIES+=($value)
+    done
+    
+}
+
+
+declare -A ATTRIBUTES
+# multimarkdown style atributes at the top of the file.  But note
+# that multiline attributes are not supported.
+function get_attributes() {
+    echo "function: $FUNCNAME $1"
+    local filename=$1
+    local IFS=":"
+    ATTRIBUTES=()
+    CATEGORIES=()
+    while read key value
+    do
+        echo "k: $key v: $value"
+        key=$(trim "$key")
+        value=$(trim "$value")
+        line="${key}${value}"
+        if [[ ${#line} = 0 ]]
+        then
+            return
+        fi
+        ATTRIBUTES[$key]=$value
+        case ${key,,} in
+            title)
+                CONVERTED_TITLE=$value;;
+            category)
+                CONVERTED_CATEGORIES+=($value);;
+            categories)
+                split_categories "$value"
+        esac
+
+    done < "$filename"
+}
+
+
+function plugin_convert() {
+    local filename=$1
+    local tmp_file="$TEMP_DIR/html"
+    #echo "tmp: $tmp_file"
+    multimarkdown "$filename" > "$tmp_file"
+    get_attributes "${filename}"
+    CONVERTED_FILE=$tmp_file
+}
+

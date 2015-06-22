@@ -1,0 +1,81 @@
+#!/bin/bash
+
+
+function split(){
+    local s=$1
+    local on=$2
+    local IFS="$on"
+    read -a RESULT <<< "$s"; }
+
+function split_categories() {
+    local categories=$1
+    split "$categories" ","
+    for value in "${RESULT[@]}"
+    do
+        value=$(trim "$value")
+        CONVERTED_CATEGORIES+=($value)
+    done
+    
+}
+
+
+declare -A ATTRIBUTES
+# markdown does not specify any syntax for this kind of thing so we
+# abuse the reference link syntax and put the attributes at the top of
+# the file.  Note that multiline attributes are not supported.
+# An attribute looks like this:
+# [title]: <> (This is the title)
+
+function get_attributes() {
+    echo "function: $FUNCNAME $1"
+    local filename=$1
+    local IFS=":"
+    ATTRIBUTES=()
+    CONVERTED_CATEGORIES=()
+    while read line
+    do
+        local key=${line%<>*}
+        key="${key/\[/}"
+        key="${key/\]/}"
+        key="${key/:/}"
+        key=$(trim "$key")
+        value="${line#*\<\>}"
+        value=$(trim "$value")
+        value=${value:1}
+        value=${value%\)}
+        echo "k: $key v: $value"
+        key=$(trim "$key")
+        value=$(trim "$value")
+        line="${key}${value}"
+        if [[ ${#line} = 0 ]]
+        then
+            # Blank line terminates the attributes block.
+            return
+        fi
+        ATTRIBUTES[$key]=$value
+        case ${key,,} in
+            title)
+                CONVERTED_TITLE=$value;;
+            category)
+                CONVERTED_CATEGORIES+=($value);;
+            categories)
+                split_categories "$value"
+        esac
+
+    done < "$filename"
+}
+
+
+function plugin_convert() {
+    echo "function: $FUNCNAME $1"
+    local filename=$1
+    local tmp_file="$TEMP_DIR/html"
+    #echo "tmp: $tmp_file"
+    markdown "$filename" > "$tmp_file"
+    # debugging
+    echo "copy $tmp_file ~/tmp/md.html"
+    cp "$tmp_file" ~/tmp/md.html
+    get_attributes "${filename}"
+    CONVERTED_FILE=$tmp_file
+}
+
