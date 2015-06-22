@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# ==============================================================
+# wp_post (c) Kevin Whitefoot >kwhitefoot@hotmail.com> 
+
+# LICENSE: GPL (http://www.gnu.org/licenses/gpl.html)
+
+# Using ideas and code from:
+# CLI Poster (c) Nikhil Gupta <me@nikhgupta.com>
+# VERSION: 1.0
+# LICENSE: GPL (http://www.gnu.org/licenses/gpl.html)
+# First release: Apr 1, 2011
+# Author: Nikhil Gupta (http://me.nikhgupta.com)
+# Contributors: http://github.com/nikhgupta/cli-poster/network
+# License: GPL, http://www.gnu.org/copyleft/gpl.html
+# Code repository: http://github.com/nikhgupta/cli-poster/tree/master
+
+# ==============================================================
+#
+# EASY POSTING TO WORDPRESS BLOGS FROM WITHIN THE COMMAND LINE
+# MULTIPLE FILES, PIPING, REDIRECTED INPUT FROM FILE | ANYTHING
+# WORKS WITH SYNTAX HIGHLIGHTER FOR EASY POSTING OF SOURCE FILES
+
+# Includes posting of media files referred to by html posts created
+# from markdown etc..
+
+# WORK IN PROGRESS
+
+
+
+
+#======== Bash Options ===============
+#set -o errexit # TODO: make this work
+set -o nounset # TODO: make this work
+#set -x
+set -e
+#PS4='Line ${LINENO}: '
+
+#======== exit status definitions ====
+readonly EXIT_REQ_SW_MISSING=65    # required software missing
+readonly EXIT_USAGE=66             # usage
+readonly EXIT_MALFORMED_CONFIG=67  # malformed config file
+readonly EXIT_MISSING_CONFIG=68    # config file non-existant
+readonly EXIT_POSTING_ERROR=69     # posting error (no blog or empty content)
+readonly EXIT_ABORTED=70
+#=====================================
+
+readonly VERSION=0.1
+function version() {
+    cat <<-EndVersion
+	wp_post Command Line WordPress Blog Posting v$VERSION
+        (c) Kevin Whitefoot 2015-05-27
+        Based on cli-poster.sh (c) 
+	EndVersion
+    exit 1
+}
+
+# Set script name and full path early.
+readonly POSTER_SH=$(basename "$0")
+TODO_FULL_SH="$0"
+
+readonly TEMP_DIR=$(mktemp -dt "$(basename $0).XXXXXXXXXX")
+
+#echo "TODO_FULL_SH: $TODO_FULL_SH"
+SCRIPT_DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$SCRIPT_DIR" ]]
+then
+    SCRIPT_DIR="$PWD"
+fi
+SCRIPT_DIR="$(realpath $SCRIPT_DIR)"
+
+declare -a CATEGORIES
+
+# source the various files containing subroutines.
+. "$SCRIPT_DIR/wp_utils.sh"
+. "$SCRIPT_DIR/wp_usage.sh"
+. "$SCRIPT_DIR/wp_show.sh"
+. "$SCRIPT_DIR/wp_checks.sh"
+. "$SCRIPT_DIR/wp_config.sh"
+. "$SCRIPT_DIR/wp_convert.sh"
+. "$SCRIPT_DIR/wp_upload_media.sh"
+. "$SCRIPT_DIR/wp_cache.sh"
+. "$SCRIPT_DIR/wp_options.sh"
+. "$SCRIPT_DIR/wp_show.sh"
+. "$SCRIPT_DIR/wp_post_methods.sh"
+. "$SCRIPT_DIR/wp_entities.sh"
+
+get_options "$@"
+
+
+# Load the plugin for the converter No need to check, default is null
+# which always exists and does nothing.
+. "$SCRIPT_DIR/plugins/$CONVERTER"
+ 
+#init_colour_codes
+echo "a"
+
+q_show_help
+ 
+echo "bb"
+
+check_requirements
+
+    echo "c"
+
+echo "fs: ${FILES[@]}"
+
+# MODIFY, LIST, READ BLOG SETTINGS
+[ "$TESTCONFIG" == "1" ] && test_blogs $CONFIGFILE
+
+# if we do not have any input, check if we have input via pipe or via
+# redirection. if none, show usage instructions if no modifications
+# were made to configuration file.
+if [[ $# == 0 && -z "$TEXTINPUT" ]]
+then
+    if [ -t 0 ]
+    then
+        if [[ $TESTCONFIG == 1 ]]
+        then
+            exit $EXIT_USAGE
+        else 
+            shortusage
+        fi
+    elif [ "$READINPUT"=="0" ]
+    then
+        READINPUT=1
+        TMPFL=$(tempfile -m 777)
+        while read data; do
+            echo "${data}" >> $TMPFL
+        done
+        TEXTINPUT=$(<$TMPFL)
+        rm $TMPFL
+    else
+        echo "This is strange. But, I should never show you this line!"
+    fi
+fi
+
+echo "fs: ${FILES[@]}"
+
+load_configuration "$CONFIGFILE" "${FILES[0]}" 
+
+totalerrors=0;
+totalposts=0;
+TOTAL_UNCHANGED=0;
+totalposted=0;
+if [ "$READINPUT" == "0" ]
+then
+    # POST FILES PROVIDED AS ARGUMENTS
+    echo "Posting to ${CONFIG[url]} blog$"
+    send_files_for_posting "${FILES[@]}"
+else
+    # READ FROM STDIN
+    post_content "${POSTTITLE}" "${TEXTINPUT}"
+    let totalerrors+=${posterrors:-0};
+    let totalposted+=${postedto:-0};
+    let totalposts+=${totaltopost:-0};
+fi
+
+if (( $totalerrors ))
+then
+    echo -e "\nFound ${totalerrors} errors while posting!"
+fi
+
+if (( totalposted + TOTAL_UNCHANGED == totalposts ))
+then
+    echo "Success"
+else
+    echo "Completed with errors"
+fi
+
+echo "Posted:    $totalposted"
+echo "Unchanged: $TOTAL_UNCHANGED" 
+echo "Total:     $totalposts"
+
+echo "You can use option: -v (verbose mode) for detailed information while posting." 
+
+# OPEN HOMEPAGE IF REQUESTED
+if [ "$OPENBLOGS" == "home" ] && [ -n "$OPENBROWSER" ]
+then
+    echo "Now, opening homepage for blog.."
+    $OPENBROWSER "http://${CONFIG[url]}"
+fi
+
+echo -e "\n\tCompleted\n\t"
