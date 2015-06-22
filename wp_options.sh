@@ -1,19 +1,20 @@
 
 
 function get_options() {
-    echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME"
 
     # SET SOME DEFAULT DEFINITIONS
     CONFIGFILE=""
     CONVERTER="null"
+    VERBOSITY=1
     
-    while getopts ":hvsxeFVDR0nd:f:c:p:o:S:T:C:" options
+    while getopts ":hsxeFVDR0nd:f:c:p:o:S:T:C:v:" options
     do
-        echo "opt: $options"
+        verbose 7 "opt: $options"
         case $options in
             h) SHOW_USAGE=1;;
             e) SHOW_EXAMPLES=1;;
-            v) VERBOSE=1;;
+            v) VERBOSITY="$OPTARG";;
             s) SHORTOUTPUT=1;;
             x) TESTCONFIG=1;;
             F) FORCEPOSTING=1;;
@@ -43,7 +44,6 @@ function get_options() {
     CONVERTER=${CONVERTER:-""}
     WPCATEGORY=${WPCATEGORY:-"Uncategorized"}
     WPPOSTTYPE=${WPPOSTTYPE:-"post"}
-    VERBOSE=${VERBOSE:-0}
     OPENBLOGS=${OPENBLOGS:-""}
     READINPUT=${READINPUT:-0}
     SHOW_EXAMPLES=${SHOW_EXAMPLES:-0}
@@ -57,11 +57,9 @@ function get_options() {
     RECURSIVEPOSTING=${RECURSIVEPOSTING:-0}
     if (( $RECURSIVEPOSTING ))
     then
-        DIRECTORYPOSTING="1"; else DIRECTORYPOSTING=${DIRECTORYPOSTING:-0}
+        DIRECTORYPOSTING="1"
+    else
+        DIRECTORYPOSTING=${DIRECTORYPOSTING:-0}
     fi
-    if (( "$VERBOSE" ))
-    then
-        SHORTOUTPUT="0"; else SHORTOUTPUT=${SHORTOUTPUT:-0}
-    fi    
 }
 

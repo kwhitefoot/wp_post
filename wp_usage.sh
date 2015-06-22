@@ -1,11 +1,10 @@
 
 # Show help if asked.
 function q_show_help() {
-    echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME"
     (( "$SHORTUSAGE" )) && shortusage
     (( "$SHOW_USAGE" )) && usage
     (( "$SHOW_EXAMPLES" )) && examples
-    echo "aa"
 }
 
 # Show usage summary and exit.
@@ -111,7 +110,8 @@ function usage() {
 
     if [ "$SHOW_EXAMPLES" == "1" ]
     then
-        echo; examples
+        echo
+        examples
     fi
     exit $EXIT_USAGE
 }

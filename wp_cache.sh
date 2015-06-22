@@ -5,7 +5,7 @@ declare -A CACHE
 
 function make_cache() {
     local base=$1
-    #echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME"
     make_cache_file_name "$base" 
     load_cache "$base" 
 }
@@ -27,25 +27,20 @@ function get_cache_item() {
 function update_cache() {
     KEY="$1"
     VALUE="$2"
-    #echo "k: $KEY"
-    #echo "v: $VALUE"
     CACHE["$KEY"]=$VALUE
-    #echo "cf: ${CACHEFILE}"
     echo "" > "${CACHEFILE}"
     # write one key-value pair per line separated by tabs.
     for i in "${!CACHE[@]}"
     do
-        #echo "key: $i"
-        #echo "value: ${CACHE[$i]}"
         echo -e "$i\t${CACHE[$i]}" >> "${CACHEFILE}"
     done 
 }
 
 function load_cache() {
-    #echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME"
     if [ -e  "${CACHEFILE}" ]
     then
-        echo "Load from $CACHEFILE"
+        verbose 5 "Load cache from $CACHEFILE"
         local file=$(cat "$CACHEFILE")
         # For reasons unknown the usual ways of saving and retrieving
         # associative arrays (declare -p etc.) don't seem to work for
@@ -59,10 +54,6 @@ function load_cache() {
                 CACHE[${key}]=${value}
             fi
         done < "$CACHEFILE"
-        
-        #echo "cache keys: ${!CACHE[@]}"
-        #echo "cache values: ${CACHE[@]}"
-        #echo "end load"
     else
         CACHE="( )"
     fi        

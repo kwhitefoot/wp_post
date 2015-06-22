@@ -1,18 +1,5 @@
 
 
-
-# function init_colour_codes() {
-#     echo "function: $FUNCNAME"
-#     (( $COLORCODES )) && BLD=$(tput bold)
-#     (( $COLORCODES )) && NML=$(tput sgr0)
-#     (( $COLORCODES )) && RED=$BLD$(tput setaf 1)
-#     (( $COLORCODES )) && GRN=$BLD$(tput setaf 2)
-#     (( $COLORCODES )) && YLW=$BLD$(tput setaf 3)
-#     (( $COLORCODES )) && BLU=$BLD$(tput setaf 6)
-#     COL=$(tput cols)
-#     let COL=COL-16
-# }
-
 function error {
     show_success 0 "failed" "$1"; 
 }
@@ -60,21 +47,10 @@ function show_success() {
 	message=( $(echo "$2" | tr '|' ' ') );
         message="${message[$1]}";
         message=${message:-"$2"}
-	color=( "${RED}" "${YLW}" "${GRN}" "${RED}" )
 	desc=( "_Error_" "Warning" "Success" "ABORTED")
-	if (( $COLORCODES ))
-        then
-            desc="${color[$1]}${desc[$1]}!${NML} $3" 
-        else
-            desc="${desc[$1]}! $3"
-        fi
+        desc="${desc[$1]}! $3"
+        
 	[ -n "$3" ] && echo -ne "${desc}";
-	if (( $COLORCODES ))
-        then
-            tput hpa $COL
-            echo -e "${color[$1]}[ ${message} ]${NML}";
-	else
-            printf "\n%${COL}s\n" "...[ ${message} ]"
-        fi
+        printf "\n%s\n" "...[ ${message} ]"
     fi
 }

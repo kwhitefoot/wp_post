@@ -1,7 +1,7 @@
 # Bugs
 
 
-## Unfixed
+## Not yet fixed
 
 ### 2015-06-21: Doesn't recognize that the entry has already been posted
 

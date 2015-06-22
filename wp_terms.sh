@@ -89,9 +89,9 @@ new_category() {
 </methodCall>
 EOF
 )
-    echo "xml: $XML"
+    verbose 8 "xml: $XML"
     local response=$(curl -ksS -H "Content-Type: application/xml" -X POST --data-binary "${XML}" $blog_url/xmlrpc.php)
-    echo "Response: $response"
+    verbose 8 "Response: $response"
     
 }
 
@@ -116,8 +116,8 @@ get_tags() {
 </methodCall>
 EOF
 )
-    echo "xml: $XML"
+    verbose 10 "xml: $XML"
     local response=$(curl -ksS -H "Content-Type: application/xml" -X POST --data-binary "${XML}" $blog_url/xmlrpc.php)
-    echo "Response: $response"
+    verbose 10 "Response: $response"
     
 }

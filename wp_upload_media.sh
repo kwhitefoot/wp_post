@@ -3,29 +3,24 @@
 # Check first to see if the file is changed or new by looking in the
 # cache file for the main document.
 function q_upload_media_file() {
-    echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME $@"
     local blog_url="$1"
     USER="$2"
     PASS="$3"
     TYPE="$4"
     FILENAME="$5"
     OVERWRITE="$6"
-    echo "function: $FUNCNAME"
-    echo "USER: $USER, PASS: $PASS"
-    echo "FILENAME: $FILENAME"
 
-    #echo "cache keys: ${!CACHE[@]}"
-    #echo "cache values: ${CACHE[@]}"
     local original_timestamp=$(get_cache_item "${FILENAME}.timestamp")
     local new_timestamp=$(stat -c %y "${FILENAME}")
-    #echo "ot: $original_timestamp"
-    #echo "nt: $new_timestamp"
+    verbose 10 "ot: $original_timestamp"
+    verbose 10 "nt: $new_timestamp"
     if [[ "$original_timestamp" = "$new_timestamp" ]]
     then
-        echo "${FILENAME} already uploaded, get remote url from cache."
+        verbose 3 "${FILENAME} already uploaded, get remote url from cache."
         RESULT==${CACHE["${FILENAME}.url"]}
     else
-        echo "Time stamp changed, uploading"
+        verbose 1 "Time stamp changed, uploading"
         upload_media_file \
             "${blog_url}" "${USER}" \
             "${PASS}" "${TYPE}" "${FILENAME}" \
@@ -37,14 +32,13 @@ function q_upload_media_file() {
 }
 
 function upload_media_file() {
+    verbose 10 "function: $FUNCNAME $@"
     local blog_url="$1"
     USER="$2"
     PASS="$3"
     TYPE="$4"
     FILENAME="$5"
     OVERWRITE="$6"
-    echo "function: $FUNCNAME"
-    echo "u $USER, p $PASS"
     FILE=$(base64 "$FILENAME")
 
     XML=$(cat <<EOF 
@@ -116,20 +110,17 @@ function upload_media_file() {
 </methodCall>
 EOF
 )
-    #echo "xml: $XML"
+    verbose 10 "xml: $XML"
 
     # Save the xml to a file because pictures can easily be too big
     # for the command line.
     xml_file="${TEMP_DIR}/xml"
-    #echo "xmlfile: $xml_file"
     echo "$XML" > "$xml_file"
     response=$(curl -vksS -H "Content-Type: application/xml" -X POST --data-binary "@${xml_file}" ${blog_url}/xmlrpc.php)
-    echo "Response: $response"
+    verbose 10 "Response: $response"
 
     url=${response#*http://}
     url=${url%%\<*}
-    #echo "url: $url"
-    RESULT="http://$url"
-    
+    RESULT="http://$url"    
 }
 

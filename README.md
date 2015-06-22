@@ -76,7 +76,7 @@ variables:
 * CONVERTED_TITLE: to be used as the title of the post.
 
 * CATEGORIES: a simple array containing the category names to be
-              applied to the post.
+  applied to the post.
 
 It is convenient to name the plugin script after the actual command
 that does the conversion.  There will be no collision because the
@@ -86,7 +86,7 @@ plugin scripts are not maked as executable and are not in the path.
 
 Very much not rules.
 
-A few self imposed guidlines to make the code a little easier to
+A few self imposed guidelines to make the code a little easier to
 maintain.
 
 * Global variables should be in _ALL CAPS_.

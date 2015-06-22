@@ -33,7 +33,7 @@
 #set -o errexit # TODO: make this work
 set -o nounset # TODO: make this work
 #set -x
-set -e
+#set -e
 #PS4='Line ${LINENO}: '
 
 #======== exit status definitions ====
@@ -44,6 +44,10 @@ readonly EXIT_MISSING_CONFIG=68    # config file non-existant
 readonly EXIT_POSTING_ERROR=69     # posting error (no blog or empty content)
 readonly EXIT_ABORTED=70
 #=====================================
+
+# Define VERBOSITY early because it is unfortunately used before the
+# options are processed.
+VERBOSITY=1
 
 readonly VERSION=0.1
 function version() {
@@ -61,7 +65,6 @@ TODO_FULL_SH="$0"
 
 readonly TEMP_DIR=$(mktemp -dt "$(basename $0).XXXXXXXXXX")
 
-#echo "TODO_FULL_SH: $TODO_FULL_SH"
 SCRIPT_DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$SCRIPT_DIR" ]]
 then
@@ -92,23 +95,16 @@ get_options "$@"
 # which always exists and does nothing.
 . "$SCRIPT_DIR/plugins/$CONVERTER"
  
-#init_colour_codes
-echo "a"
-
 q_show_help
  
-echo "bb"
+echo "a"
 
 check_requirements
-
-    echo "c"
-
-echo "fs: ${FILES[@]}"
 
 # MODIFY, LIST, READ BLOG SETTINGS
 [ "$TESTCONFIG" == "1" ] && test_blogs $CONFIGFILE
 
-# if we do not have any input, check if we have input via pipe or via
+# If we do not have any input, check if we have input via pipe or via
 # redirection. if none, show usage instructions if no modifications
 # were made to configuration file.
 if [[ $# == 0 && -z "$TEXTINPUT" ]]
@@ -134,8 +130,6 @@ then
         echo "This is strange. But, I should never show you this line!"
     fi
 fi
-
-echo "fs: ${FILES[@]}"
 
 load_configuration "$CONFIGFILE" "${FILES[0]}" 
 

@@ -9,3 +9,14 @@ trim() {
     var="${var%"${var##*[![:space:]]}"}"  
     echo -n "$var"
 }
+
+function verbose() {
+    local limit=$1
+    local msg="$2"
+    if (( $limit <= $VERBOSITY ))
+    then
+        echo "$msg"
+    fi
+}
+
+        

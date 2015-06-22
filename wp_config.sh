@@ -1,20 +1,12 @@
 
 
-echo "Loading wp_config.sh"
-
-function x() {
-    echo "function: $FUNCNAME $1"
-    
-}
-
-
-
+verbose 15 "Loading wp_config.sh"
 
 declare -A CONFIG
 function read_configuration() {
-    echo "function: $FUNCNAME $1"
+    verbose 10 "function: $FUNCNAME $1"
     local file=$1
-    echo "Loading configuration from ${file}"
+    verbose 5 "Loading configuration from ${file}"
     while read line
     do
         if [[ $line == *=* ]]
@@ -29,7 +21,6 @@ function read_configuration() {
     then 
         echo "Empty Configuration File or file does not contain"
         echo "necessary values!"
-        echo "Create a template using -m"
         exit EXIT_MALFORMED_CONFIG
     fi
 }
@@ -49,16 +40,16 @@ function read_configuration() {
 
 # Expects the blog_fn argument to be a full path.
 function load_configuration() {
-    #echo "function: $FUNCNAME $1 $2"
+    verbose 10 "function: $FUNCNAME $1 $2"
     local config_fn="$1"
     local blog_fn=$2
     if [[ "$config_fn" = "" ]]
     then
-        echo "No configuration file specified, try default locations and names" 
+        verbose 3 "No configuration file specified, trying default locations and names" 
         config_fn=".${blog_fn}.config"
         if [[ ! -f "$config_fn" ]]
         then
-            echo "Config named for file  <${config_fn}> does not exist"
+            verbose 3 "Config named for file  <${config_fn}> does not exist"
             if [[ "${blog_fn}" = *"/"* ]]
             then
                 d="${blog_fn%/*}/"
@@ -76,7 +67,7 @@ function load_configuration() {
 }
 
 function make_config_template() {
-    echo "function: $FUNCNAME $1"
+    verbose 10 "function: $FUNCNAME $1"
     
     echo "url=xxxx"
     echo "user=yyyy"

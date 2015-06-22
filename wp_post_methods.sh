@@ -5,23 +5,22 @@
 # CLI Poster POSTING METHODS
 function post_file() {
     # Parameters: file(s)
-    echo "function: $FUNCNAME $@"
+    verbose 10 "function: $FUNCNAME $@"
     local file="$1"
     local orig_file="$1"
-    echo "file: $file"
     make_cache "$file"
     local original_timestamp=$(get_cache_item "${file}.timestamp")
     local new_timestamp=$(stat -c %y "${file}")
 
     local posterrors="0"
     CONVERTED_TITLE=""
-    echo "CONVERTER: $CONVERTER"
+    verbose 3 "CONVERTER: $CONVERTER"
     if [[ "$CONVERTER" != "null" ]]
     then
         # Note that we have to convert the file to html in order to
         # find the image links so that we can upload changed images
         # even if the file that refers to them has not changed.
-        echo "post_media"
+        verbose 2 "post_media"
         post_media "$file"
         # Replace filename with name of temporary file containing the
         # html created from markdown, asciidoc, etc.
@@ -30,13 +29,13 @@ function post_file() {
 
     if [[ "$original_timestamp" = "$new_timestamp" ]]
     then
-        echo "File unchanged"
+        verbose 2 "File unchanged"
         let TOTAL_UNCHANGED+=1 
     else
         # set the filename as the title of this post, and file content as
         # the post content and sanitize both
 
-        echo "Title: $CONVERTED_TITLE"
+        verbose 2 "Title: $CONVERTED_TITLE"
         if [[ $CONVERTED_TITLE = "" ]]
         then
             WPTITLE="${filename%.*}"
@@ -45,8 +44,7 @@ function post_file() {
         fi
         WPTITLE="${WPTITLE//\'/\&apos;}"
         WP_POST=$(echo "$(<"$file")" | sed -e "s|'|\&apos;|g")
-        echo "Convert other entities"
-        #WP_POST=$(php -r "echo htmlentities('$WP_POST',ENT_NOQUOTES,'ISO-8859-1',false);")
+        verbose 5 "Convert other entities"
         WP_POST=$(convert_entities "$WP_POST")
         
         # if a source format is provided, format the post accordingly
@@ -68,10 +66,7 @@ function post_file() {
         then
             error "Seems like the source content is empty.\n\t(Or, probably, there was an error while preparing this content for posting.)"
         else
-            if [ "${SHORTOUTPUT}" == "0" ]
-            then
-                echo -en "Posting: ${FILEBASE} (applied formatting: ${syntax})"
-            fi
+            verbose 1 "Posting: ${FILEBASE} (applied formatting: ${syntax})"
             post_to_wordpress "${CONFIG[url]}" \
                 "$(get_cache_item "${orig_file}.id")" \
                 "${CONFIG[user]}" \
@@ -87,15 +82,12 @@ function post_file() {
 
 function post_content() {
     # options: title, content
-    #echo "function: $FUNCNAME"
+    verbose 10 "function: $FUNCNAME"
     posterrors="0"
     # set the filename as the title of this post, and file content as
     # the post content and sanitize both
     WPTITLE=$(echo "$1" | sed -e "s|'|\&apos;|g")
     WP_POST=$(echo "$2" | sed -e "s|'|\&apos;|g")
-    #    WPTITLE=$(php -r "echo htmlentities('$WPTITLE',ENT_NOQUOTES,'ISO-8859-1',false);")
-    #    WP_POST=$(php -r "echo htmlentities('$WP_POST',ENT_NOQUOTES,'ISO-8859-1',false);")
-    
     # if a source format is provided, format the post accordingly
     if [ "$POSTFORMAT" != "auto" ] && [ "$POSTFORMAT" != "off" ]
     then
@@ -104,10 +96,8 @@ function post_content() {
         POSTFORMAT="text"
     fi
     
-    if [ "${SHORTOUTPUT}" == "0" ]
-    then
-        echo -en "Posting to ${CONFIG[url]} (applied formatting: ${POSTFORMAT})"
-    fi
+    verbose 1 "Posting to ${CONFIG[url]} (applied formatting: ${POSTFORMAT})"
+
     post_to_wordpress "${CONFIG[url]}" \
         "" \
         "${CONFIG[user]}" \
@@ -147,9 +137,6 @@ function post_to_wordpress() {
     local categories=$6
     local post_type=$7
     local post=$8
-    #echo "pi: $post_id"
-    #echo "keys: ${!CACHE[@]}"
-    #echo "values: ${CACHE[@]}"
     if [[ $post_id = "" ]]
     then
         local rpc="newPost"
@@ -226,23 +213,23 @@ function post_to_wordpress() {
 </methodCall>
 EOF
 )
-    echo "xml: $XML"
+    verbose 8 "xml: $XML"
     
     (( $DRYRUN )) || {
-        echo "Post via curl"
+        verbose 4 "Post via curl"
         local response=$(curl -ksS -H "Content-Type: application/xml" -X POST --data-binary "${XML}" $blog_url/xmlrpc.php)
-        echo "Response: $response"
+        verbose 4 "Response: $response"
         if [[ $response == *\<name\>faultCode\</name\>* ]]
         then
             get_fault "$response"
             local fault=$RESULT
             echo "fault: $fault"
         else
-            echo "No fault"
+            verbose 2 "No fault"
             local fault=""
             if [[ $post_id = "" ]]
             then
-                echo "Get the new post id"
+                verbose 7 "Get the new post id"
                 POST_ID=$(echo $response | sed "s|.*string>\(.*\)<\/string.*$|\1|g")
             else
                 POST_ID=$post_id
@@ -250,15 +237,13 @@ EOF
         fi
     }
 
-    echo "pi: $POST_ID"
+    verbose 4 "pi: $POST_ID"
     if [[ $fault == "" ]] && [ "$POST_ID" != "0" ] || (( $DRYRUN ))
     then
-        echo "No post error"
+        verbose 8 "No post error"
         posterror=0;
-        if [ "$VERBOSE" == "1" ]
-        then
-            echo -e "\n\tPosted successfully to: $1 with user: $2 with URL: http://$1/?p=${POST_ID}"
-        fi
+        verbose 1 "\n\tPosted successfully to: $1 with user: $2 with URL: http://$1/?p=${POST_ID}"
+        
         if [ "$OPENBLOGS" == "post" ] && [ -n "$OPENBROWSER" ]
         then
             $OPENBROWSER "http://$1/?p=${POST_ID}"
@@ -285,8 +270,7 @@ function get_fault() {
 }
 
 function get_file_name_and_extension() {
-    #echo "function: $FUNCNAME"
-    #echo "arg: $1"
+    verbose 10 "function: $FUNCNAME"
     FILEBASE="${1##*/}" # remove directory
     FILE_EXTENSION="${FILEBASE#*.}" # get just extension
     FILENAME="${FILEBASE%%.*}" # remove extension
@@ -300,16 +284,15 @@ function get_file_name_and_extension() {
 
 # prepare a list of files that we need to post
 function send_files_for_posting() {
-    echo "function: $FUNCNAME $@" 
+    verbose 10 "function: $FUNCNAME $@" 
     local file
     for file in "$@"; do
-        echo "file: $file"
+        verbose 3 "file: $file"
         # get file extension, file basename for this file
         get_file_name_and_extension "$file"
         
         if [[ -f "$file" ]]
         then
-            echo "exists"
             post_file "$file";
             let totalerrors+=${posterrors:-0};
             let totalposted+=${postedto:-0};
